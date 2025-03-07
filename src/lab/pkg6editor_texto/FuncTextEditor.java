@@ -18,12 +18,12 @@ import javax.swing.text.rtf.RTFEditorKit;
  *
  * @author DELL
  */
-public class Editor_Funciones {
+public class FuncTextEditor {
     private String contenidoTexto;
     private Font fuenteActual;
     private Color colorActual;
 
-    public Editor_Funciones() {
+    public FuncTextEditor() {
         contenidoTexto = "";
         fuenteActual = new Font("Arial", Font.PLAIN, 12);
         colorActual = Color.BLACK;
