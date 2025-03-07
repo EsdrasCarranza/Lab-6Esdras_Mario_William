@@ -9,6 +9,7 @@ import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
+import java.awt.event.ActionListener;
 import java.io.File;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -19,11 +20,17 @@ import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.JTree;
 import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.Element;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.undo.UndoManager;
 
@@ -151,5 +158,93 @@ public class GUITextEditor extends JFrame{
         barra.add(Box.createVerticalStrut(10));
 
         return barra;
+        
+    }
+     private void inicializarArbol(File carpeta) {
+        nodoRaiz = new DefaultMutableTreeNode(carpeta.getName());
+        cargarNodos(carpeta, nodoRaiz);
+        arbolArchivos = new JTree(nodoRaiz);
+
+        JScrollPane scrollArbol = new JScrollPane(arbolArchivos);
+        barraEstilos.add(scrollArbol);
+
+        lblRuta.setText("Carpeta raiz: " + carpeta.getAbsoluteFile().getParentFile().getName());
+        revalidate();
+        repaint();
+    }
+
+    private void cargarNodos(File carpeta, DefaultMutableTreeNode nodoPadre) {
+        File[] archivos = carpeta.listFiles();
+        if (archivos != null) {
+            for (File f : archivos) {
+                DefaultMutableTreeNode nodoHijo = new DefaultMutableTreeNode(f.getName());
+                nodoPadre.add(nodoHijo);
+                if (f.isDirectory()) {
+                    cargarNodos(f, nodoHijo);
+                }
+            }
+        }
+    }
+
+    private JButton crearBotonEstilo(String texto, int estiloFuente, ActionListener listener) {
+        JButton boton = new JButton(texto);
+        boton.setFont(new Font("Arial", estiloFuente, 14));
+        boton.addActionListener(listener);
+        return boton;
+    }
+
+    private void alternarNegrita() {
+        StyledDocument doc = areaTexto.getStyledDocument();
+        int inicio = areaTexto.getSelectionStart();
+        int fin = areaTexto.getSelectionEnd();
+        if (inicio == fin) {
+            JOptionPane.showMessageDialog(this, "Selecciona texto antes de aplicar formato.");
+            return;
+        }
+        for (int i = inicio; i < fin; i++) {
+            Element elemento = doc.getCharacterElement(i);
+            AttributeSet attrs = elemento.getAttributes();
+            SimpleAttributeSet nuevos = new SimpleAttributeSet(attrs);
+            boolean esNegrita = StyleConstants.isBold(attrs);
+            StyleConstants.setBold(nuevos, !esNegrita);
+            doc.setCharacterAttributes(i, 1, nuevos, true);
+        }
+    }
+
+    private void alternarCursiva() {
+        StyledDocument doc = areaTexto.getStyledDocument();
+        int inicio = areaTexto.getSelectionStart();
+        int fin = areaTexto.getSelectionEnd();
+        if (inicio == fin) {
+            JOptionPane.showMessageDialog(this, "Selecciona texto antes de aplicar formato.");
+            return;
+        }
+        for (int i = inicio; i < fin; i++) {
+            Element elemento = doc.getCharacterElement(i);
+            AttributeSet attrs = elemento.getAttributes();
+            SimpleAttributeSet nuevos = new SimpleAttributeSet(attrs);
+            boolean esCursiva = StyleConstants.isItalic(attrs);
+            StyleConstants.setItalic(nuevos, !esCursiva);
+            doc.setCharacterAttributes(i, 1, nuevos, true);
+        }
+    }
+
+    private void alternarSubrayado() {
+        StyledDocument doc = areaTexto.getStyledDocument();
+        int inicio = areaTexto.getSelectionStart();
+        int fin = areaTexto.getSelectionEnd();
+        if (inicio == fin) {
+            JOptionPane.showMessageDialog(this, "Selecciona texto antes de aplicar formato.");
+            return;
+        }
+        for (int i = inicio; i < fin; i++) {
+            Element elemento = doc.getCharacterElement(i);
+            AttributeSet attrs = elemento.getAttributes();
+            SimpleAttributeSet nuevos = new SimpleAttributeSet(attrs);
+            boolean esSubrayado = StyleConstants.isUnderline(attrs);
+            StyleConstants.setUnderline(nuevos, !esSubrayado);
+            doc.setCharacterAttributes(i, 1, nuevos, true);
+
+        }
     }
 }
