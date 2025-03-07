@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Main.java to edit this template
- */
 package lab.pkg6editor_texto;
 
 import java.awt.BorderLayout;
@@ -11,15 +7,17 @@ import java.awt.Font;
 import java.awt.GraphicsEnvironment;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.DefaultListModel;
 import javax.swing.JButton;
+import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -27,25 +25,19 @@ import javax.swing.JTextPane;
 import javax.swing.JTree;
 import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
 import javax.swing.text.AttributeSet;
+import javax.swing.text.DefaultStyledDocument;
 import javax.swing.text.Element;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
+import javax.swing.text.rtf.RTFEditorKit;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 import javax.swing.undo.UndoManager;
 
-/**
- *
- * @author 50488
- */
 public class GUITextEditor extends JFrame{
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) {
-       new GUITextEditor();
-    }
+    
    private JTextPane areaTexto;
     private JComboBox<String> fuentes;
     private JComboBox<Integer> tamaños;
@@ -63,14 +55,14 @@ public class GUITextEditor extends JFrame{
 
     public GUITextEditor() {
         gestorDeshacer = new UndoManager();
-        setTitle("WORD ESDRAS");
+        setTitle("WORD ESDRAS, MARIO, WILLIAM");
         setSize(1000, 700);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
         String rutaProyecto = System.getProperty("user.dir");
-        File carpetaProyecto = new File(rutaProyecto, "DocumentosEditor");
+        File carpetaProyecto = new File(rutaProyecto, "Documentos");
         if (!carpetaProyecto.exists()) {
             carpetaProyecto.mkdirs();
         }
@@ -246,5 +238,112 @@ public class GUITextEditor extends JFrame{
             doc.setCharacterAttributes(i, 1, nuevos, true);
 
         }
+    }
+    
+    private void deshacer() {
+        if (gestorDeshacer.canUndo()) {
+            gestorDeshacer.undo();
+            actualizarEstadoBotones();
+        }
+    }
+
+    private void rehacer() {
+        if (gestorDeshacer.canRedo()) {
+            gestorDeshacer.redo();
+            actualizarEstadoBotones();
+        }
+    }
+
+    private void actualizarEstadoBotones() {
+        btnDeshacer.setEnabled(gestorDeshacer.canUndo());
+        btnRehacer.setEnabled(gestorDeshacer.canRedo());
+    }
+
+    private void aplicarFormato() {
+        StyledDocument doc = areaTexto.getStyledDocument();
+        int inicio = areaTexto.getSelectionStart();
+        int fin = areaTexto.getSelectionEnd();
+        if (inicio == fin) {
+            JOptionPane.showMessageDialog(this, "Selecciona texto antes de aplicar formato.");
+            return;
+        }
+        SimpleAttributeSet estilo = new SimpleAttributeSet();
+        String fuente = (String) fuentes.getSelectedItem();
+        if (fuente != null) {
+            StyleConstants.setFontFamily(estilo, fuente);
+        }
+        Integer tamano = (Integer) tamaños.getSelectedItem();
+        if (tamano != null) {
+            StyleConstants.setFontSize(estilo, tamano);
+        }
+        doc.setCharacterAttributes(inicio, fin - inicio, estilo, false);
+    }
+
+    private void seleccionarColor() {
+        StyledDocument doc = areaTexto.getStyledDocument();
+        int inicio = areaTexto.getSelectionStart();
+        int fin = areaTexto.getSelectionEnd();
+        if (inicio == fin) {
+            JOptionPane.showMessageDialog(this, "Selecciona texto antes de aplicar formato.");
+            return;
+        }
+        Color color = JColorChooser.showDialog(this, "Seleccionar Color", Color.BLACK);
+        if (color != null) {
+            SimpleAttributeSet estilo = new SimpleAttributeSet();
+            StyleConstants.setForeground(estilo, color);
+            doc.setCharacterAttributes(inicio, fin - inicio, estilo, false);
+        }
+    }
+
+    private void guardarArchivo() {
+        JFileChooser selector = new JFileChooser(directorioRaiz);
+        int opcion = selector.showSaveDialog(this);
+        if (opcion == JFileChooser.APPROVE_OPTION) {
+            File archivo = selector.getSelectedFile();
+            try (FileOutputStream fos = new FileOutputStream(archivo)) {
+                RTFEditorKit editorKit = new RTFEditorKit();
+                editorKit.write(fos, areaTexto.getStyledDocument(), 0, areaTexto.getStyledDocument().getLength());
+                JOptionPane.showMessageDialog(this, "Archivo guardado con exito.");
+                directorioRaiz = archivo.getParentFile();
+                recargarArbol();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error al guardar el archivo: " + ex.getMessage());
+            }
+        }
+    }
+
+    private void abrirArchivo() {
+        JFileChooser selector = new JFileChooser(directorioRaiz);
+        int opcion = selector.showOpenDialog(this);
+        if (opcion == JFileChooser.APPROVE_OPTION) {
+            File archivo = selector.getSelectedFile();
+            try (FileInputStream fis = new FileInputStream(archivo)) {
+                RTFEditorKit editorKit = new RTFEditorKit();
+                StyledDocument doc = new DefaultStyledDocument();
+                editorKit.read(fis, doc, 0);
+                areaTexto.setStyledDocument(doc);
+                JOptionPane.showMessageDialog(this, "Archivo abierto con exito.");
+                gestorDeshacer.discardAllEdits();
+                actualizarEstadoBotones();
+                areaTexto.getDocument().addUndoableEditListener(e -> {
+                    gestorDeshacer.addEdit(e.getEdit());
+                    actualizarEstadoBotones();
+                });
+                directorioRaiz = archivo.getParentFile();
+                recargarArbol();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error al abrir el archivo: " + ex.getMessage());
+            }
+        }
+    }
+
+    private void recargarArbol() {
+        nodoRaiz.removeAllChildren();
+        cargarNodos(directorioRaiz, nodoRaiz);
+        // Se llama a getAbsoluteFile().getParentFile().getName() en lugar de getAbsolutePath()
+        lblRuta.setText("Carpeta raiz: " + directorioRaiz.getAbsoluteFile().getParentFile().getName());
+        ((DefaultTreeModel) arbolArchivos.getModel()).reload();
+        revalidate();
+        repaint();
     }
 }
