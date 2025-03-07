@@ -49,5 +49,18 @@ public class Editor_Funciones {
         fuenteActual = new Font(nombreFuente, estilo, tamaño);
     }
 
+    public void actualizarColor(Color color) {
+        colorActual = color;
+    }
+
+  
+    public Font getFuenteActual() {
+        return fuenteActual;
+    }
+
+    public Color getColorActual() {
+        return colorActual;
+    }
+
 
 }
